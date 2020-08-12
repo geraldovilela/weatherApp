@@ -1,6 +1,6 @@
 import React, {useState, useEffect} from 'react';
-import { View, Text, StyleSheet, StatusBar, PermissionsAndroid } from 'react-native';
-import Geolocation from 'react-native-geolocation-service'
+import { View, Text, StyleSheet, StatusBar, PermissionsAndroid, Button, FlatList } from 'react-native';
+import Geolocation from '@react-native-community/geolocation';
 import axios from 'axios';
 
 const api = axios.create({
@@ -9,15 +9,38 @@ const api = axios.create({
 
 
 
-const API_KEY = '91d1976abcd838afa503aeef9f972a42'
+const API_KEY = '5d33b958d2ddf92d1ef0e9ed54e78365'
 
    
 
 export default function App(){
     const [hasLocationPermission, setHasLocaitonPermission]= useState(false);
-    const [userLocation, setLocation]= useState({});
-   
+    const [error, setError]= useState("");
+    const [userLocation, setLocation]= useState({
+        latitude:null,
+        longitude:null
+    });
+    const [weather, setWeather] = useState([])
+    const [main, setMain] = useState({})
+    var response=[];
+
+    const getPosition = () => {
+          Geolocation.getCurrentPosition(
+            pos => {
+              setError("");
+              setLocation({
+                latitude: pos.coords.latitude,
+                longitude: pos.coords.longitude
+              });
+            },
+            e => setError(e.message)
+          );
+        getData();
+
+
+        };
     
+
     async function verifyPermissions(){
         try {
             const granted = await PermissionsAndroid.request(
@@ -34,46 +57,42 @@ export default function App(){
             console.warn(err);
         }
 
-        finally{
-            if(hasLocationPermission){
-                Geolocation.getCurrentPosition(
-                   position => {
-                       setLocation({
-                           latitude: position.coords.latitude,
-                           longitude: position.coords.longitude
-                       });
-                   },
-                   error=>{
-                       console.log(error.code, error.message)
-                   },
-           
-               )}        
-        }
-    
     }
-
-    
-
+        
     async function getData(){
-        if(userLocation !== false){
-        const response = await api.get(`weather?lat=${userLocation.latitude}&lon=${userLocation.longitude}&appid=91d1976abcd838afa503aeef9f972a42`)
-            console.log(response.data)
+        try {
+        const dataApi = await api.get(`weather?lat=${userLocation.latitude}&lon=${userLocation.longitude}&appid=${API_KEY}&units=metric&lang=pt_br`)
+        
+        setWeather([dataApi.data.weather]);
+        setMain(dataApi.data.main);
+            
+        } catch (error) {
+            console.log(error.message + 'inside catch' )    
+        }
+        return response;
             //weather?lat=-22.2196006&lon=-54.8401334&appid=91d1976abcd838afa503aeef9f972a42
             //weather?lat=${userLocation.latitude}&lon=${userLocation.longitude}&appid=91d1976abcd838afa503aeef9f972a42
-    }
+    
 }
     
     useEffect(()=>{
         verifyPermissions();
-        
-        
-        getData();
+        getPosition();
        
-        
-        
-      //  const response = await fetch.get(`api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${long}&appid=${API_KEY}`)
-      //  console.log(response)
-
+        // if(hasLocationPermission){
+        //     Geolocation.getCurrentPosition(
+        //        position => {
+        //            setLocation({
+        //                latitude: position.coords.latitude,
+        //                longitude: position.coords.longitude
+        //            });
+        //        },
+        //        error=>{
+        //            console.log(error.code, error.message)
+        //        },
+       
+        //    )}        
+      
     },[hasLocationPermission])
 
 
@@ -81,11 +100,21 @@ export default function App(){
         <>
             <StatusBar barStyle='light-content' />
             <View style={styles.container}>
-                <Text>Latitude: {userLocation.latitude}</Text>
-                <Text>Longitude: {userLocation.longitude}</Text>
-              
+               
+                {error ? (
+                    <Text style={styles.Text}>Error retrieving current position</Text>
+                ) : (
+                        <>
+                            <Text style={styles.Text}>{weather.id}</Text>
+                            <Text style={styles.Text}>{main.temp}</Text>
+                            
+                            <Text style={styles.Text}>{main.temp_min}</Text>
+                            <Text style={styles.Text}>{main.temp_max}</Text>
+                            
+                        </>
+                    )}
+                <Button title="Atualizar" onPress={getPosition} />
             </View>
-
         </>
         )
 }
@@ -93,13 +122,13 @@ export default function App(){
 const styles = StyleSheet.create({
    container: {
        flex:1,
-       backgroundColor: '#696969',
+       backgroundColor: '#F2F2F2',
        justifyContent: 'center',
        alignItems: 'center'
    },
    Text:{
-       color: '#FFF',
-       fontSize: 35,
+       color: '#060606',
+       fontSize: 18,
        fontWeight:'bold'
    }     
 })
