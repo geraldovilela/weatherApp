@@ -1,5 +1,5 @@
 import React, {useState, useEffect} from 'react';
-import { View, Text, StyleSheet, StatusBar, PermissionsAndroid, Button, FlatList } from 'react-native';
+import { View, Text, StyleSheet, StatusBar, PermissionsAndroid, Button, Image } from 'react-native';
 import Geolocation from '@react-native-community/geolocation';
 import axios from 'axios';
 
@@ -9,7 +9,7 @@ const api = axios.create({
 
 
 
-const API_KEY = '5d33b958d2ddf92d1ef0e9ed54e78365'
+const API_KEY = 'bb92b1bccc257c178ab9cc71c452261c'
 
    
 
@@ -22,7 +22,9 @@ export default function App(){
     });
     const [weather, setWeather] = useState([])
     const [main, setMain] = useState({})
-    var response=[];
+    const [name, setName] = useState('')
+    const [sys, setSys] = useState({})
+    var icon =null;
 
     const getPosition = () => {
           Geolocation.getCurrentPosition(
@@ -60,20 +62,30 @@ export default function App(){
     }
         
     async function getData(){
+        
         try {
         const dataApi = await api.get(`weather?lat=${userLocation.latitude}&lon=${userLocation.longitude}&appid=${API_KEY}&units=metric&lang=pt_br`)
-        
         setWeather([dataApi.data.weather]);
         setMain(dataApi.data.main);
+        setName(dataApi.data.name);
+        setSys(dataApi.data.sys);
+        getIcon();
             
         } catch (error) {
             console.log(error.message + 'inside catch' )    
         }
-        return response;
-            //weather?lat=-22.2196006&lon=-54.8401334&appid=91d1976abcd838afa503aeef9f972a42
-            //weather?lat=${userLocation.latitude}&lon=${userLocation.longitude}&appid=91d1976abcd838afa503aeef9f972a42
-    
+        
+          
 }
+
+     async function getIcon(){
+      //**tentando pegar o icone referente ao clima da API. */   
+         try {
+             icon = await fetch(`http://openweathermap.org/img/wn/${weather.id}@2x.png`)
+         } catch (error) {
+             console.log(error.message)
+         }
+     }
     
     useEffect(()=>{
         verifyPermissions();
@@ -106,14 +118,15 @@ export default function App(){
                 ) : (
                         <>
                             <Text style={styles.Text}>{weather.id}</Text>
-                            <Text style={styles.Text}>{main.temp}</Text>
+                            <Text style={styles.Text}> Local {name}, {sys.country} </Text>
+                            <Text style={styles.Text}> Temperatura {main.temp} º</Text>
                             
-                            <Text style={styles.Text}>{main.temp_min}</Text>
-                            <Text style={styles.Text}>{main.temp_max}</Text>
+                            <Text style={styles.Text}> Temp. minima {main.temp_min} º</Text>
+                            <Text style={styles.Text}> Temp. maxima {main.temp_max} º</Text>
                             
                         </>
                     )}
-                <Button title="Atualizar" onPress={getPosition} />
+                <Button title="Atualizar" onPress={getData} />
             </View>
         </>
         )
